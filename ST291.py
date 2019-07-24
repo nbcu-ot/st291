@@ -32,6 +32,7 @@ class ST291RTPPayloadData:
         values_dict[ST211040] = self.dissect_values(bitarray_data)
         message_dict = self.extract_explanations(values_dict)
 
+        self.raw_data = bitarray_data
         self.values = values_dict
         self.explanations = message_dict
 
@@ -49,7 +50,9 @@ class ST291RTPPayloadData:
                 if title in VALS and value in VALS[title]:
                     message_dict[ST211040]["Packets"][i][title] = "(" + str(message_dict[ST211040]["Packets"][i][title]) + ") " + VALS[title][value]
 
-            message_dict[ST211040]["Packets"][i]["UDW"] = self.get_UDW_info(DID, SDID, values_dict[ST211040]["Packets"][i]["UDW"])
+            UDW_str = values_dict[ST211040]["Packets"][i]["UDW"]
+            payload_descriptor = UDW_str[:4]
+            message_dict[ST211040]["Packets"][i]["UDW"] = self.get_UDW_info(DID, SDID, "0x" + UDW_str[4:])
 
         return message_dict
 
@@ -99,29 +102,20 @@ class ST291RTPPayloadData:
             self.offset_reader(bitarray_data, 2)
             values_dict["Packets"][i]["Data Count"] = bitarray_data.read("uint:8")
 
-            UDW_bit_count = values_dict["Packets"][i]["Data Count"] * 10
+            UDW_word_count = values_dict["Packets"][i]["Data Count"]
+            UDW = "0x"
 
-            # First two bits of UDW belongs in the previous byte so we offset
-            # the reader by 6 bits backwards to include the previous byte
-            self.offset_reader(bitarray_data, -6)
-            num_bits_to_read = UDW_bit_count + 6
+            for _ in range(UDW_word_count):
+                self.offset_reader(bitarray_data, 2)
+                UDW += bitarray_data.read("hex:8")
 
-            # Determine if the last bits of UDW trail into the next byte
-            overflow = num_bits_to_read % 8
-            extra = 0
-            if overflow != 0:
-                extra = 8 - overflow
-                num_bits_to_read += extra
-
-            values_dict["Packets"][i]["UDW"] = hex(bitarray_data.read("uint:" + str(num_bits_to_read)))
-
-            # offset reader back if the next byte was included in UDW
-            self.offset_reader(bitarray_data, -1 * extra)
+            values_dict["Packets"][i]["UDW"] = UDW
 
             # First bit of checksum word is an inverse bit
             self.offset_reader(bitarray_data, 1)
             values_dict["Packets"][i]["Checksum Word"] = hex(bitarray_data.read("uint:9"))
 
+            UDW_bit_count = UDW_word_count * 10
             word_align = 32 - ((UDW_bit_count - 2 + 10) % 32)
             values_dict["Packets"][i]["Word Align"] = str(len(bitarray_data.read("bin:" + str(word_align)))) + " bits"
 
@@ -150,3 +144,9 @@ class ST291RTPPayloadData:
 
     def to_dict(self):
         return copy.deepcopy(self.explanations)
+
+    def print_values(self):
+        print(json.dumps(self.get_values_dict(), indent=4, sort_keys=False))
+
+    def get_values_dict(self):
+        return copy.deepcopy(self.values)
