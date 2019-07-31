@@ -32,5 +32,12 @@ bitarray_data = bitstring.BitString(hex_string)
 
 my_event = ST291RTPPayloadData(bitarray_data)
 my_event.print_values()
-my_event.print()
+# my_event.print()
+
+raw, test = my_event.to_binary()
+
+print(raw)
+print("----------------")
+print(test.lstrip("0x"))
+
 # print(hex_string)
