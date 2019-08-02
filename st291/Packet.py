@@ -38,15 +38,15 @@ class Packet:
         offset_reader(bitarray_data, 1)
         self.values_dict["Checksum Word"] = bitarray_data.read("uint:9")
 
-        # UDW_bit_count = self.word_count * 10
-        # word_align = 32 - ((UDW_bit_count - 2 + 10) % 32)
-        # self.values_dict["Word Align"] = str(len(bitarray_data.read("bin:" + str(word_align)))) + " bits"
+        UDW_bit_count = self.word_count * 10
+        word_align = 32 - ((UDW_bit_count - 2 + 10) % 32)
+        offset_reader(bitarray_data, word_align)
 
         if (self.DID in DID_SDID):
-            if self.SDID in DID_SDID[self.DID]:
-                self.values_dict["Packet Info"] = DID_SDID[self.DID][self.SDID]
-            else:
+            if isinstance(DID_SDID[self.DID], str):
                 self.values_dict["Packet Info"] = DID_SDID[self.DID]
+            elif self.SDID in DID_SDID[self.DID]:
+                self.values_dict["Packet Info"] = DID_SDID[self.DID][self.SDID]
         else:
             self.values_dict["Packet Info"] = ""
 
@@ -101,8 +101,8 @@ class Packet:
         return printable_dict
 
     def to_binary(self):
-        self.values_dict["Line Number"] = 0x7FF
-        self.values_dict["Horizontal Offset"] = 0xFFF
+        # self.values_dict["Line Number"] = 0x7FF
+        # self.values_dict["Horizontal Offset"] = 0xFFF
         binary_str = ""
 
         udw_bin = ""
@@ -146,6 +146,27 @@ class Packet:
         binary_str += '0' * int(word_align)
 
         return bitstring.BitString(bin=binary_str)
+
+    def get_length(self):
+        length = 72
+        udw_bin = ""
+
+        if not isinstance(self.UDW, int):
+            udw_bit_array = self.UDW.to_binary()
+            udw_bit_array.prepend(self.payload_descriptor)
+            udw_hex = udw_bit_array.hex
+            self.word_count = int(len(udw_hex) / 2)
+            udw_bin = convert_8_to_10_bit_words(udw_bit_array)
+        else:
+            udw_bin = int_to_bin(self.UDW, self.word_count * 10)
+
+        length += len(udw_bin)
+
+        word_align = 32 - ((self.word_count * 10 - 2 + 10) % 32)
+
+        length += word_align
+
+        return length
 
     def is_scte_104_packet(self):
         return self.DID == 0x41 and self.SDID == 0x07
