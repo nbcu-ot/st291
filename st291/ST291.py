@@ -5,6 +5,7 @@ from collections import deque
 from scte.Scte104.SpliceEvent import SpliceEvent
 
 from st291.ST291_enums import VALS, DID_SDID
+from st291.Utilities import convert_8_to_10_bit_words, int_to_bin, bool_to_bin, offset_reader
 
 byte_size = 8
 
@@ -187,21 +188,21 @@ class ST291RTPPayloadData:
         timestamp = RTP_Data["Timestamp"]
         sync_source_id = int(RTP_Data["Synchronization Source identifier"], 0)
 
-        binary_str += self.int_to_bin(version, 2)
-        binary_str += self.bool_to_bin(padding)
-        binary_str += self.bool_to_bin(extension)
-        binary_str += self.int_to_bin(csi_count, 4)
-        binary_str += self.bool_to_bin(marker)
-        binary_str += self.int_to_bin(payload_type, 7)
-        binary_str += self.int_to_bin(seq_num, 16)
-        binary_str += self.int_to_bin(timestamp, 32)
-        binary_str += self.int_to_bin(sync_source_id, 32)
+        binary_str += int_to_bin(version, 2)
+        binary_str += bool_to_bin(padding)
+        binary_str += bool_to_bin(extension)
+        binary_str += int_to_bin(csi_count, 4)
+        binary_str += bool_to_bin(marker)
+        binary_str += int_to_bin(payload_type, 7)
+        binary_str += int_to_bin(seq_num, 16)
+        binary_str += int_to_bin(timestamp, 32)
+        binary_str += int_to_bin(sync_source_id, 32)
 
         ST291_data = copy.deepcopy(self.values[ST211040])
         ext_seq_num = int(ST291_data["Extended Sequence Number"], 0)
         f = ST291_data["F"]
 
-        binary_str += self.int_to_bin(ext_seq_num, 16)
+        binary_str += int_to_bin(ext_seq_num, 16)
 
         anc_count = 0
         length = 0
@@ -218,7 +219,7 @@ class ST291RTPPayloadData:
             udw_hex = udw_bit_array.hex
             packet["Data Count"] = int(len(udw_hex) / 2)
             packet_length += packet["Data Count"] * 10
-            udw_bin = self.convert_8_to_10_bit_words(udw_bit_array)
+            udw_bin = convert_8_to_10_bit_words(udw_bit_array)
             packet["UDW"] = udw_bin
 
             word_align = 32 - ((packet["Data Count"] * 10 - 2 + 10) % 32)
@@ -227,9 +228,9 @@ class ST291RTPPayloadData:
 
             length += packet_length / 8
 
-        binary_str += self.int_to_bin(int(length), 16)
-        binary_str += self.int_to_bin(anc_count, 8)
-        binary_str += self.int_to_bin(f, 2)
+        binary_str += int_to_bin(int(length), 16)
+        binary_str += int_to_bin(anc_count, 8)
+        binary_str += int_to_bin(f, 2)
         binary_str += '0' * 22
 
         for index, packet in enumerate(ST291_data["Packets"]):
@@ -238,19 +239,19 @@ class ST291RTPPayloadData:
             horiz_offset = packet["Horizontal Offset"]
             s = packet["S"]
             stream_num = packet["StreamNum"]
-            did = self.int_to_bin(int(packet["DID"], 0), 8)
-            sdid = self.int_to_bin(int(packet["SDID"], 0), 8)
-            data_count = self.int_to_bin(packet["Data Count"], 8)
+            did = int_to_bin(int(packet["DID"], 0), 8)
+            sdid = int_to_bin(int(packet["SDID"], 0), 8)
+            data_count = int_to_bin(packet["Data Count"], 8)
             checksum = int(packet["Checksum Word"], 0)
 
-            binary_str += self.int_to_bin(c, 1)
-            binary_str += self.int_to_bin(line_num, 11)
-            binary_str += self.int_to_bin(horiz_offset, 12)
-            binary_str += self.int_to_bin(s, 1)
-            binary_str += self.int_to_bin(stream_num, 7)
-            binary_str += self.convert_8_to_10_bit_words(bitstring.BitString(bin=did + sdid + data_count))
+            binary_str += int_to_bin(c, 1)
+            binary_str += int_to_bin(line_num, 11)
+            binary_str += int_to_bin(horiz_offset, 12)
+            binary_str += int_to_bin(s, 1)
+            binary_str += int_to_bin(stream_num, 7)
+            binary_str += convert_8_to_10_bit_words(bitstring.BitString(bin=did + sdid + data_count))
             binary_str += packet["UDW"]
-            checksum_bin = self.int_to_bin(checksum, 9)
+            checksum_bin = int_to_bin(checksum, 9)
             checksum_parity = "0"
 
             if checksum_bin[0] == "0":
@@ -261,40 +262,3 @@ class ST291RTPPayloadData:
             binary_str += packet["Word Align"]
 
         return bitstring.BitString(bin=binary_str)
-
-    def convert_8_to_10_bit_words(self, bitarray):
-        raw_binary_str = bitarray.bin
-
-        converted = ""
-
-        word = ""
-        num_odd = 0
-        for i in raw_binary_str:
-            if i == '1':
-                num_odd = (num_odd + 1) % 2
-
-            word = word + i
-
-            if len(word) == 8:
-                num_even = 0
-
-                if num_odd == 0:
-                    num_even = 1
-
-                converted = converted + str(num_even) + str(num_odd) + word
-                word = ""
-                num_odd = 0
-
-        return converted
-
-    def int_to_bin(self, value, num_bits=1):
-        raw = bin(value).lstrip("0b")
-
-        num_missing_bits = num_bits - len(raw)
-
-        raw = "0" * num_missing_bits + raw
-
-        return raw
-
-    def bool_to_bin(self, bool_val):
-        return self.int_to_bin(int(bool_val))

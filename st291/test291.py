@@ -1,5 +1,6 @@
 from ST291 import ST291RTPPayloadData
 from ST291_enums import VALS
+from Utilities import convert_8_to_10_bit_words
 from Packet import Packet
 import unittest
 import bitstring
@@ -44,7 +45,7 @@ class TestPacket(unittest.TestCase):
         bin_str = "01011010"
         bitarray_data = bitstring.BitString(bin=bin_str)
         test_bin_str = "1001011010"
-        self.assertEqual(Packet.convert_8_to_10_bit_words(Packet, bitarray_data), test_bin_str)
+        self.assertEqual(convert_8_to_10_bit_words(bitarray_data), test_bin_str)
 
     def test_packet_init(self):
         packet_bits_1 = bitstring.BitString(packet_string_1)
