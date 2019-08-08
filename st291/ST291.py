@@ -8,6 +8,11 @@ from st291.ST291_enums import VALS, DID_SDID
 from st291.Packet import Packet
 from st291.Utilities import convert_8_to_10_bit_words, int_to_bin, bool_to_bin, offset_reader
 
+# For testing
+# from ST291_enums import VALS, DID_SDID
+# from Packet import Packet
+# from Utilities import convert_8_to_10_bit_words, int_to_bin, bool_to_bin, offset_reader
+
 byte_size = 8
 
 RTP = "Real-Time Transport Protocol"
@@ -57,6 +62,9 @@ class ST291RTPPayloadData:
 
         return values_dict
 
+    def edit_timestamp(self, new_timestamp):
+        self.values["Real-Time Transport Protocol"]["Timestamp"] = new_timestamp
+
     def print(self):
         print(str(self))
 
@@ -100,7 +108,7 @@ class ST291RTPPayloadData:
 
         return values_dict
 
-    def to_binary(self):
+    def rtp_to_binary(self):
         binary_str = ""
 
         RTP_Data = self.values[RTP]
@@ -124,6 +132,11 @@ class ST291RTPPayloadData:
         binary_str += int_to_bin(timestamp, 32)
         binary_str += int_to_bin(sync_source_id, 32)
 
+        return binary_str
+
+    def st291_to_binary(self):
+        binary_str = ""
+
         ST291_data = copy.deepcopy(self.values[ST211040])
 
         ext_seq_num = int(ST291_data["Extended Sequence Number"], 0)
@@ -143,5 +156,12 @@ class ST291RTPPayloadData:
 
         for packet in self.packets:
             binary_str += packet.to_binary().bin
+
+        return binary_str
+
+    def to_binary(self):
+        binary_str = self.rtp_to_binary()
+
+        binary_str += self.st291_to_binary()
 
         return bitstring.BitString(bin=binary_str)
