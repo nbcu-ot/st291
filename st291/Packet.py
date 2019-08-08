@@ -7,6 +7,10 @@ from scte.Scte104.SpliceEvent import SpliceEvent
 from st291.ST291_enums import VALS, DID_SDID
 from st291.Utilities import convert_8_to_10_bit_words, int_to_bin, offset_reader
 
+# For testing
+# from ST291_enums import VALS, DID_SDID
+# from Utilities import convert_8_to_10_bit_words, int_to_bin, offset_reader
+
 
 class Packet:
     def __init__(self, bitarray_data):
