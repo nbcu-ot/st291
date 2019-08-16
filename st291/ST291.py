@@ -62,14 +62,23 @@ class ST291RTPPayloadData:
 
         return values_dict
 
+    def get_timestamp(self):
+        return self.values[RTP]["Timestamp"]
+
     def edit_timestamp(self, new_timestamp):
-        self.values["Real-Time Transport Protocol"]["Timestamp"] = new_timestamp
+        self.values[RTP]["Timestamp"] = new_timestamp
+
+    def add_packet(self, packet):
+        self.packets.append(packet)
+
+    def remove_packet(self, packet):
+        self.packets.remove(packet)
 
     def print(self):
         print(str(self))
 
     def __str__(self):
-        return(json.dumps(self.to_dict(), indent=4, sort_keys=False))
+        return(json.dumps(self.to_dict()))
 
     def to_dict(self):
         message_dict = copy.deepcopy(self.values)
