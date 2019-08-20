@@ -54,6 +54,9 @@ class Packet:
         else:
             self.values_dict["Packet Info"] = ""
 
+    def update_UDW_object(self, UDW_object):
+        self.UDW = UDW_object
+
     def find_UDW_object(self, bitarray_data):
         if self.is_scte_104_packet():
             UDW_hex = "0x"
@@ -96,7 +99,8 @@ class Packet:
                 printable_dict[title] = "(" + str(printable_dict[title]) + ") " + VALS[title][value]
 
         if isinstance(self.UDW, int):
-            printable_dict["UDW"] = self.UDW
+            ##TODO returns 10-bit words but may want to return 8 bit words
+            printable_dict["UDW"] = hex(self.UDW)
         else:
             if self.is_scte_104_packet():
                 printable_dict["UDW"] = self.UDW.to_dict(upid_as_str=True)
