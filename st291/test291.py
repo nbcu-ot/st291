@@ -85,7 +85,7 @@ class TestPacket(unittest.TestCase):
                 'DID': "0x60",
                 'SDID': "0x60",
                 'Data Count': 16,
-                'UDW': 731532151408787574238337190537472808866183152000}
+                'UDW': "0x8023094290942004418048200441804820048180"}
             packet_bits_1 = bitstring.BitString(packet_string_1)
             packet = Packet(packet_bits_1)
             self.assertEqual(packet.to_printable_dict(), packet_test_printable_dict)
