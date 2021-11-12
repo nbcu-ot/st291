@@ -44,7 +44,8 @@ class Packet:
 
         UDW_bit_count = self.word_count * 10
         word_align = 32 - ((UDW_bit_count - 2 + 10) % 32)
-        offset_reader(bitarray_data, word_align)
+        if word_align != 32: # ONLY apply the offset if the word_align is needed to complete the packet
+            offset_reader(bitarray_data, word_align)
 
         if (self.DID in DID_SDID):
             if isinstance(DID_SDID[self.DID], str):
