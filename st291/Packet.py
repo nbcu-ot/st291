@@ -43,7 +43,7 @@ class Packet:
         self.values_dict["Checksum Word"] = bitarray_data.read("uint:9")
 
         UDW_bit_count = self.word_count * 10
-        word_align = 32 - ((UDW_bit_count - 2 + 10) % 32)
+        word_align = (32 - (UDW_bit_count - 2 + 10)) % 32
         offset_reader(bitarray_data, word_align)
 
         if (self.DID in DID_SDID):
